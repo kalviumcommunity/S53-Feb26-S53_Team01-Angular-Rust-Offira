@@ -7,9 +7,12 @@ mod db;
 mod handlers;
 mod models;
 mod routes;
+mod auth;
+mod middleware;
 
 use db::connection::connect_db;
 
+use crate::routes::auth_routes::auth_routes;
 use crate::routes::user_routes::user_routes;
 
 async fn health() -> &'static str {
@@ -26,7 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/", get(health))
-        .merge(user_routes(pool.clone()));
+        .merge(user_routes(pool.clone()))
+        .merge(auth_routes(pool.clone()));
 
     let port = env::var("PORT").unwrap_or("3000".to_string());
 
