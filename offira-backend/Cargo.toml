@@ -6,8 +6,13 @@ edition = "2024"
 [dependencies]
 argon2 = "0.5.3"
 axum = "0.8.8"
+chrono = "0.4.44"
 dotenvy = "0.15.7"
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
+rand = { version = "0.8", features = ["std", "std_rng"] }
+rand_core = "0.10.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "macros"] }
 tokio = { version = "1.49.0", features = ["full"] }
+password-hash = "0.5"
