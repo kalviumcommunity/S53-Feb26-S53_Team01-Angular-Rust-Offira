@@ -9,6 +9,7 @@ mod models;
 mod routes;
 mod auth;
 mod middleware;
+mod errors;
 
 use db::connection::connect_db;
 
