@@ -1,0 +1,63 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE organizations\n        SET name = $1,\n            industry = $2,\n            size = $3,\n            website = $4,\n            official_email = $5\n        WHERE id = $6\n        RETURNING id, name, industry, size, website, official_email, created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "industry",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "size",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "website",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "official_email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6cac4bf9c52a3e1c9f7de53f850d1855f1ce93fcdffc225753344ec56c8d75b4"
+}

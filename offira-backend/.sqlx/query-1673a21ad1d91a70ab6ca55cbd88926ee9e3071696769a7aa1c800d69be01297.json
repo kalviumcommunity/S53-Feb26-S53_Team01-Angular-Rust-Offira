@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO organizations (name, industry, size, website, official_email)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id, name, industry, size, website, official_email, created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "industry",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "size",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "website",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "official_email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "1673a21ad1d91a70ab6ca55cbd88926ee9e3071696769a7aa1c800d69be01297"
+}
