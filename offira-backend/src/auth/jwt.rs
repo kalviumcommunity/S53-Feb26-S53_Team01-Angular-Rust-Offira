@@ -1,14 +1,20 @@
 use chrono::{Duration, Utc};
-use jsonwebtoken::{EncodingKey, Header, encode, DecodingKey, Validation, decode};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 
 use crate::auth::claims::Claims;
 
-const SECRET: &[u8] = b"super_secret_key";
+fn get_secret() -> Vec<u8> {
+    std::env::var("JWT_SECRET")
+        .expect("JWT_SECRET must be set")
+        .into_bytes()
+}
 
 pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    let secret = get_secret();
+
     let decoded = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(SECRET),
+        &DecodingKey::from_secret(&secret),
         &Validation::default(),
     )?;
 
@@ -16,6 +22,8 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
 }
 
 pub fn generate_token(user_id: i32, role_id: i32) -> String {
+    let secret = get_secret();
+
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .unwrap()
@@ -30,7 +38,7 @@ pub fn generate_token(user_id: i32, role_id: i32) -> String {
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(SECRET),
+        &EncodingKey::from_secret(&secret),
     )
     .unwrap()
 }
