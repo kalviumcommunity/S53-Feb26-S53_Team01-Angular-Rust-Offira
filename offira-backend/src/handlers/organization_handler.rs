@@ -1,16 +1,18 @@
 use axum::{
-    extract::{Path, State},
     Json,
+    extract::{Path, State},
 };
 use sqlx::PgPool;
 
-use crate::models::organizations::{CreateOrganization, Organization, UpdateOrganization};
+use crate::{
+    errors::app_error::AppError,
+    models::organizations::{CreateOrganization, Organization, UpdateOrganization},
+};
 
 pub async fn create_organization(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateOrganization>,
-) -> Json<Organization> {
-
+) -> Result<Json<Organization>, AppError> {
     let org = sqlx::query_as!(
         Organization,
         r#"
@@ -26,15 +28,14 @@ pub async fn create_organization(
     )
     .fetch_one(&pool)
     .await
-    .unwrap();
+    .map_err(|_| AppError::internal("Database error"))?;
 
-    Json(org)
+    Ok(Json(org))
 }
 
 pub async fn get_organizations(
     State(pool): State<PgPool>,
-) -> Json<Vec<Organization>> {
-
+) -> Result<Json<Vec<Organization>>, AppError> {
     let orgs = sqlx::query_as!(
         Organization,
         r#"
@@ -44,16 +45,14 @@ pub async fn get_organizations(
     )
     .fetch_all(&pool)
     .await
-    .unwrap();
-
-    Json(orgs)
+    .map_err(|_| AppError::internal("Database error"))?;
+    Ok(Json(orgs))
 }
 
 pub async fn get_organization_by_id(
     Path(id): Path<i32>,
     State(pool): State<PgPool>,
-) -> Json<Organization> {
-
+) -> Result<Json<Organization>, AppError> {
     let org = sqlx::query_as!(
         Organization,
         r#"
@@ -65,17 +64,15 @@ pub async fn get_organization_by_id(
     )
     .fetch_one(&pool)
     .await
-    .unwrap();
-
-    Json(org)
+    .map_err(|_| AppError::internal("Database error"))?;
+    Ok(Json(org))
 }
 
 pub async fn update_organization(
     Path(id): Path<i32>,
     State(pool): State<PgPool>,
     Json(payload): Json<UpdateOrganization>,
-) -> Json<Organization> {
-
+) -> Result<Json<Organization>, AppError> {
     let org = sqlx::query_as!(
         Organization,
         r#"
@@ -97,23 +94,17 @@ pub async fn update_organization(
     )
     .fetch_one(&pool)
     .await
-    .unwrap();
-
-    Json(org)
+    .map_err(|_| AppError::internal("Database error"))?;
+    Ok(Json(org))
 }
 
 pub async fn delete_organization(
     Path(id): Path<i32>,
     State(pool): State<PgPool>,
-) -> Json<String> {
-
-    sqlx::query!(
-        "DELETE FROM organizations WHERE id = $1",
-        id
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    Json("Organization deleted successfully".to_string())
+) -> Result<Json<String>, AppError> {
+    sqlx::query!("DELETE FROM organizations WHERE id = $1", id)
+        .execute(&pool)
+        .await
+        .map_err(|_| AppError::internal("Database error"))?;
+    Ok(Json("Organization deleted successfully".to_string()))
 }

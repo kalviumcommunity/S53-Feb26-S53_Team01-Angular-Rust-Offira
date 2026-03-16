@@ -3,17 +3,20 @@ use dotenvy::dotenv;
 use std::env;
 use tokio::net::TcpListener;
 
+mod auth;
 mod db;
+mod errors;
 mod handlers;
+mod middleware;
 mod models;
 mod routes;
-mod auth;
-mod middleware;
-mod errors;
 
 use db::connection::connect_db;
 
 use crate::routes::auth_routes::auth_routes;
+use crate::routes::leave_balance_routes::leave_balance_routes;
+use crate::routes::leave_policy_routes::leave_policy_routes;
+use crate::routes::leave_routes::leave_routes;
 use crate::routes::organization_routes::organization_routes;
 use crate::routes::user_routes::user_routes;
 
@@ -33,9 +36,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(health))
         .merge(user_routes(pool.clone()))
         .merge(auth_routes(pool.clone()))
-        .merge(organization_routes(pool.clone()));
+        .merge(organization_routes(pool.clone()))
+        .merge(leave_balance_routes(pool.clone()))
+        .merge(leave_policy_routes(pool.clone()))
+        .merge(leave_routes(pool.clone()));
 
-    let port = env::var("PORT").unwrap_or("3000".to_string());
+    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
 
     let address = format!("127.0.0.1:{}", port);
 
