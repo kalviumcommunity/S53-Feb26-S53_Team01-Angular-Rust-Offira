@@ -21,7 +21,7 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
     Ok(decoded.claims)
 }
 
-pub fn generate_token(user_id: i32, role_id: i32) -> String {
+pub fn generate_token(user_id: i32, role_id: i32, organization_id: i32) -> String {
     let secret = get_secret();
 
     let expiration = Utc::now()
@@ -32,6 +32,7 @@ pub fn generate_token(user_id: i32, role_id: i32) -> String {
     let claims = Claims {
         user_id,
         role_id,
+        organization_id,
         exp: expiration,
     };
 

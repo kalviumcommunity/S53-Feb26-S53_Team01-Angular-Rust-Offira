@@ -14,6 +14,7 @@ mod routes;
 use db::connection::connect_db;
 
 use crate::routes::auth_routes::auth_routes;
+use crate::routes::invite_routes::invite_routes;
 use crate::routes::leave_balance_routes::leave_balance_routes;
 use crate::routes::leave_policy_routes::leave_policy_routes;
 use crate::routes::leave_routes::leave_routes;
@@ -39,6 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(organization_routes(pool.clone()))
         .merge(leave_balance_routes(pool.clone()))
         .merge(leave_policy_routes(pool.clone()))
+        .merge(invite_routes(pool.clone()))
         .merge(leave_routes(pool.clone()));
 
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());

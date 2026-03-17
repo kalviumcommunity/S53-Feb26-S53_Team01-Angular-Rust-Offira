@@ -1,5 +1,11 @@
-use axum::{Json, extract::{Path, State}};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use sqlx::PgPool;
+
+use crate::auth::claims::Claims;
+use axum::extract::Extension;
 
 use crate::{
     errors::app_error::AppError,
@@ -7,6 +13,7 @@ use crate::{
 };
 
 pub async fn create_leave_request(
+    Extension(claims): Extension<Claims>,
     State(pool): State<PgPool>,
     Json(payload): Json<CreateLeaveRequest>,
 ) -> Result<Json<LeaveRequest>, AppError> {
@@ -19,8 +26,8 @@ pub async fn create_leave_request(
         RETURNING id, user_id, organization_id, policy_id,
         start_date, end_date, reason, status
         "#,
-        1,
-        1,
+        claims.user_id,
+        claims.organization_id,
         payload.policy_id,
         payload.start_date,
         payload.end_date,
@@ -34,6 +41,7 @@ pub async fn create_leave_request(
 }
 
 pub async fn get_leave_requests(
+    Extension(claims): Extension<Claims>,
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<LeaveRequest>>, AppError> {
     let leaves = sqlx::query_as!(
@@ -45,7 +53,7 @@ pub async fn get_leave_requests(
         WHERE user_id = $1
         ORDER BY created_at DESC
         "#,
-        1
+        claims.user_id
     )
     .fetch_all(&pool)
     .await
@@ -55,9 +63,9 @@ pub async fn get_leave_requests(
 }
 
 pub async fn get_team_leave_requests(
+    Extension(claims): Extension<Claims>,
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<LeaveRequest>>, AppError> {
-
     let leaves = sqlx::query_as!(
         LeaveRequest,
         r#"
@@ -67,7 +75,7 @@ pub async fn get_team_leave_requests(
         WHERE organization_id = $1
         ORDER BY created_at DESC
         "#,
-        1
+        claims.organization_id
     )
     .fetch_all(&pool)
     .await
@@ -77,11 +85,11 @@ pub async fn get_team_leave_requests(
 }
 
 pub async fn update_leave_request_status(
+    Extension(claims): Extension<Claims>,
     Path(id): Path<i32>,
     State(pool): State<PgPool>,
     Json(payload): Json<UpdateLeaveStatus>,
 ) -> Result<Json<String>, AppError> {
-
     let mut tx = pool
         .begin()
         .await
@@ -99,11 +107,16 @@ pub async fn update_leave_request_status(
     .await
     .map_err(|_| AppError::not_found("Leave request not found"))?;
 
-    let leave_days =
-        ((leave.end_date - leave.start_date).num_days() + 1) as i32;
+    let is_owner = leave.user_id == claims.user_id;
+    let is_manager_or_admin = claims.role_id == 2 || claims.role_id == 1;
+
+    if !is_owner && !is_manager_or_admin {
+        return Err(AppError::forbidden("Not authorized"));
+    }
+
+    let leave_days = ((leave.end_date - leave.start_date).num_days() + 1) as i32;
 
     if payload.status == "APPROVED" {
-
         sqlx::query!(
             r#"
             UPDATE leave_balances

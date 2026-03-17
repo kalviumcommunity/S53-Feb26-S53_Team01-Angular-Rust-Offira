@@ -4,3 +4,4 @@ pub mod organization_routes;
 pub mod leave_routes;
 pub mod leave_balance_routes;
 pub mod leave_policy_routes;
+pub mod invite_routes;
