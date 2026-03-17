@@ -19,11 +19,17 @@ impl AppError {
     }
 
     pub fn not_found(msg: &str) -> Self {
-    Self {
-        status: StatusCode::NOT_FOUND,
-        message: msg.to_string(),
+        Self {
+            status: StatusCode::NOT_FOUND,
+            message: msg.to_string(),
+        }
     }
-}
+    pub fn forbidden(msg: &str) -> Self {
+        Self {
+            status: StatusCode::FORBIDDEN,
+            message: msg.to_string(),
+        }
+    }
 }
 
 // Router returns Result<SuccessType, ErrorType>

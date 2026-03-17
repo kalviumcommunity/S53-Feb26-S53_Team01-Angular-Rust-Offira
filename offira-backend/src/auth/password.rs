@@ -16,7 +16,7 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
         .is_ok()
 }
 
-pub fn _hash_password(password: &str) -> String {
+pub fn hash_password(password: &str) -> String {
     let salt = SaltString::generate(&mut OsRng);
 
     Argon2::default()

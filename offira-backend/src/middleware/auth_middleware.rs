@@ -1,17 +1,8 @@
-use axum::{
-    extract::Request,
-    http::StatusCode,
-    middleware::Next,
-    response::Response,
-};
+use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
 
 use crate::auth::jwt::verify_token;
 
-pub async fn auth_middleware(
-    mut req: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-
+pub async fn auth_middleware(mut req: Request, next: Next) -> Result<Response, StatusCode> {
     let auth_header = req
         .headers()
         .get("Authorization")
@@ -22,7 +13,10 @@ pub async fn auth_middleware(
         None => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    let token = auth_header.trim_start_matches("Bearer ");
+    let token = match auth_header.strip_prefix("Bearer ") {
+        Some(t) => t,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
 
     let claims = match verify_token(token) {
         Ok(c) => c,

@@ -9,6 +9,7 @@ use crate::models::auth_response::AuthResponse;
 
 struct LoginUser {
     id: i32,
+    organization_id: i32,
     password_hash: Option<String>,
     role_id: i32,
 }
@@ -19,7 +20,7 @@ pub async fn login(
 ) -> Result<Json<AuthResponse>, AppError> {
     let user = sqlx::query_as!(
         LoginUser,
-        "SELECT id, password_hash, role_id FROM users WHERE email = $1",
+        "SELECT id, password_hash, role_id, organization_id FROM users WHERE email = $1",
         payload.email
     )
     .fetch_one(&pool)
@@ -40,7 +41,7 @@ pub async fn login(
         return Err(AppError::internal("Invalid credentials"));
     }
 
-    let token = generate_token(user.id, user.role_id);
+    let token = generate_token(user.id, user.role_id, user.organization_id);
 
     Ok(Json(AuthResponse { token }))
 }
