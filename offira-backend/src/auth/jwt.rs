@@ -26,7 +26,7 @@ pub fn generate_token(user_id: i32, role_id: i32) -> String {
 
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
-        .unwrap()
+        .expect("Failed to calculate token expiration")
         .timestamp() as usize;
 
     let claims = Claims {
@@ -40,5 +40,5 @@ pub fn generate_token(user_id: i32, role_id: i32) -> String {
         &claims,
         &EncodingKey::from_secret(&secret),
     )
-    .unwrap()
+    .expect("Failed to generate JWT token")
 }
