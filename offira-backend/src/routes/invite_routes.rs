@@ -9,11 +9,14 @@ use axum::{
 use sqlx::PgPool;
 
 pub fn invite_routes(pool: PgPool) -> Router {
-    Router::new()
+    let protected_routes = Router::new()
         .route("/users/invite", post(invite_user))
-        .route("/auth/invite/{token}", get(validate_invite))
-        .route("/auth/set-password", post(set_password))
         .layer(middleware::from_fn(admin_only))
-        .layer(middleware::from_fn(auth_middleware))
-        .with_state(pool)
+        .layer(middleware::from_fn(auth_middleware));
+
+    let public_routes = Router::new()
+        .route("/auth/invite/{token}", get(validate_invite))
+        .route("/auth/set-password", post(set_password));
+
+    protected_routes.merge(public_routes).with_state(pool)
 }

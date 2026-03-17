@@ -10,6 +10,7 @@ mod handlers;
 mod middleware;
 mod models;
 mod routes;
+mod utils;
 
 use db::connection::connect_db;
 
