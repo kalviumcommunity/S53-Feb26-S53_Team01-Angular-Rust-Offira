@@ -11,6 +11,9 @@ use crate::{
     models::invite::SetPasswordRequest,
 };
 
+use crate::utils::email::{build_invite_email, send_email};
+use std::env;
+
 pub async fn validate_invite(
     Path(token): Path<String>,
     State(pool): State<PgPool>,
@@ -38,7 +41,6 @@ pub async fn set_password(
     State(pool): State<PgPool>,
     Json(payload): Json<SetPasswordRequest>,
 ) -> Result<Json<String>, AppError> {
-    // 1️⃣ Fetch invite
     let invite = sqlx::query!(
         r#"
         SELECT email, organization_id, role_id, expires_at
@@ -51,12 +53,10 @@ pub async fn set_password(
     .await
     .map_err(|_| AppError::not_found("Invalid invite token"))?;
 
-    // 2️⃣ Expiration check
     if invite.expires_at < Utc::now().naive_utc() {
         return Err(AppError::internal("Invite expired"));
     }
 
-    // 3️⃣ Duplicate user check
     let existing_user = sqlx::query!("SELECT id FROM users WHERE email = $1", invite.email)
         .fetch_optional(&pool)
         .await
@@ -66,10 +66,8 @@ pub async fn set_password(
         return Err(AppError::internal("User already exists"));
     }
 
-    // 4️⃣ Hash password
     let password_hash = hash_password(&payload.password);
 
-    // 5️⃣ Create user
     sqlx::query!(
         r#"
         INSERT INTO users (full_name, email, password_hash, role_id, organization_id)
@@ -85,7 +83,6 @@ pub async fn set_password(
     .await
     .map_err(|_| AppError::internal("Failed to create user"))?;
 
-    // 6️⃣ Delete invite (prevent reuse)
     sqlx::query!(
         r#"
         DELETE FROM user_invites
@@ -107,10 +104,15 @@ pub async fn invite_user(
     let token = Uuid::new_v4().to_string();
     let expires_at = (Utc::now() + Duration::hours(24)).naive_utc();
 
-    sqlx::query!(
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|_| AppError::internal("Failed to start transaction"))?;
+
+    let result = sqlx::query!(
         r#"
-        INSERT INTO user_invites (email, organization_id, role_id, token, expires_at)
-        VALUES ($1,$2,$3,$4,$5)
+        INSERT INTO user_invites (email, organization_id, role_id, token, expires_at, is_active)
+        VALUES ($1,$2,$3,$4,$5, TRUE)
         "#,
         payload.email,
         1,
@@ -118,9 +120,34 @@ pub async fn invite_user(
         token,
         expires_at
     )
-    .execute(&pool)
-    .await
-    .map_err(|_| AppError::internal("Failed to create invite"))?;
+    .execute(&mut *tx)
+    .await;
 
-    Ok(Json("Invite created".to_string()))
+    if let Err(e) = result {
+        tx.rollback().await.ok();
+
+        if e.to_string().contains("unique_active_invite") {
+            return Err(AppError::internal("User already invited"));
+        }
+
+        return Err(AppError::internal("Failed to create invite"));
+    }
+
+    let frontend_url =
+        env::var("FRONTEND_URL").map_err(|_| AppError::internal("Missing frontend URL"))?;
+
+    let invite_link = format!("{}/accept-invite?token={}", frontend_url, token);
+
+    let html = build_invite_email(&invite_link);
+
+    if let Err(e) = send_email(&payload.email, "You're invited!", &html).await {
+        tx.rollback().await.ok();
+        return Err(AppError::internal(&e));
+    }
+
+    tx.commit()
+        .await
+        .map_err(|_| AppError::internal("Failed to commit transaction"))?;
+
+    Ok(Json("Invite sent successfully".to_string()))
 }
